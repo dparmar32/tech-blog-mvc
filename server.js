@@ -3,23 +3,20 @@ const express = require('express');
 const session = require('express-session');
 const exphbs = require('express-handlebars');
 
+/* This is creating a new instance of the express object and setting a port. */
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+/* This is creating a new instance of the SequelizeStore object. */
 const sequelize = require('./config/connection');
 const SequelizeStore = require('connect-session-sequelize')(session.Store);
 
+/* This is creating a session object that will be used to create a session store. */
 const sess = {
-    // hash based message auth code
-    // assign session cookie, server compares to secret to make sure cookie wasn't modified by client
-    // replaced by secret stored in .env file
     secret: "Super secret secret",
     cookie: {},
-    // forces session to be saved back to session store even if cookie not modified
     resave: false,
-    // save session as part of Store
     saveUninitialized: true,
-    // create connection with DB. set up session table. allow sequelize to save session into DB
     store: new SequelizeStore({
         db: sequelize
     })
@@ -27,19 +24,32 @@ const sess = {
 
 app.use(session(sess));
 
-const helpers = require("./utils/helpers");
-const hbs = exphbs.create({ helpers });
+/* This is creating a new instance of the handlebars object. */
+const hbs = exphbs.create({
+    helpers: {
+        format_date: (date) => {
+            return `${new Date(date).getMonth() + 1}/${new Date(date).getDate()}/${
+                new Date(date).getFullYear()
+            }`;
+        }
+    }
+});
 
+/* This is telling express to use the handlebars engine to render the views. */
 app.engine("handlebars", hbs.engine);
 app.set("view engine", "handlebars");
 
+/* This is telling express to use the json and urlencoded middleware. */
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({extended: false}));
 
-app.use(express.static(path.join(__dirname, "public")));
+/* This is telling express to use the static middleware to serve the public folder. */
+app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(require("./controllers/"));
+/* This is telling express to use the controllers folder. */
+app.use(require('./controllers/'));
 
-sequelize.sync({ force: false }).then(() => {
-    app.listen(PORT, () => console.log("Now listening on port " + PORT));
+/* This is creating a database connection. */
+sequelize.sync({force: false}).then(() => {
+    app.listen(PORT, () => console.log('Now listening on port ' + PORT));
 });
